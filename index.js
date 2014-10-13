@@ -8,6 +8,7 @@ module.exports = {
   models : require('./models'),
   board : {},
   listen : {},
+  route : {},
   strategy : {
     heat : function( model, key){
       var now = parseInt(new Date().getTime()),
@@ -21,7 +22,57 @@ module.exports = {
     if( module.board ){
       _.extend( root.board, module.board)
       root.addListener( root.listen, module.board )
+      root.addRoute( root.route, module.board)
     }
+  },
+  addRoute : function( routes, board){
+    var models = this.dep.model.models
+    _.forEach( board, function( config, modelName) {
+      boardConfig = _.defaults(config, {
+        type: 'heat',
+        limit: 100,
+        key: 'like'
+      })
+      routes['GET /board/'+modelName+"/"+boardConfig.type] = function( req, res, next){
+        //TODO get board data
+        var config = {
+          limit :req.param("limit") || 10,
+          skip : req.param("skip") || 0
+        };
+        var boardName = modelName+"."+boardConfig.type;
+
+        req.bus.fcall("board.retrieve", boardName, config, function(){
+          var bus = this
+
+          return models['board'].findOne({name:boardName}).then(function(board){
+            console.log("=======find board", board, config.skip, config.limit)
+            var nodeIds = _.pluck(board.list.splice(config.skip, config.limit),'id'),
+              findEvent = modelName+".find"
+
+            return bus.fire( findEvent,{id:nodeIds}).then(function(){
+              var reOrderedData = nodeIds.map( function( id){
+                return _.find(bus.data(findEvent),{id:id} )
+              })
+              bus.data("respond.data",reOrderedData)
+            })
+          })
+        })
+        next()
+      }
+      routes['GET /board/'+modelName+"/"+boardConfig.type+"/count"] = function( req, res, next){
+        var boardName = modelName+"."+boardConfig.type;
+
+        req.bus.fcall("board.count", boardName, config, function(){
+          var bus = this
+
+          return models['board'].findOne({name:boardName}).then(function(board){
+            console.log("find board", board)
+            bus.data("respond.data",{count:board.list.length})
+          })
+        })
+        next()
+      }
+    })
   },
   addListener : function( listeners, board ){
     var root = this,
@@ -66,6 +117,7 @@ module.exports = {
       var root = this,
         createBoardResults = []
       root.dep.bus.expand( this)
+      root.dep.request.expand( this)
 
       console.log( root.board)
       _.forEach( root.board ,function( config, modelName){
