@@ -1,5 +1,5 @@
 var _ = require('lodash'),
-  q = require('q')
+  Promise = require('bluebird')
 
 
 
@@ -130,7 +130,7 @@ module.exports = {
         createBoardResults.push(result)
       })
 
-      return q.all( createBoardResults )
+      return Promise.all( createBoardResults )
     },
     "order" : {after:"model.bootstrap"}
   },
