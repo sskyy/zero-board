@@ -1,9 +1,7 @@
 module.exports = [{
-    identity: 'user',
-    connection: 'localDisk',
-
-    attributes: {
-      name: 'string'
-    },
-    rest : true
-  }]
+  identity: 'board',
+  connection: 'localDisk',
+  attributes: {
+  },
+  rest : true
+}]
