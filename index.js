@@ -45,7 +45,6 @@ module.exports = {
           var bus = this
 
           return models['board'].findOne({name:boardName}).then(function(board){
-            console.log("=======find board", board, config.skip, config.limit)
             var nodeIds = _.pluck(board.list.splice(config.skip, config.limit),'id'),
               findEvent = modelName+".find"
 
@@ -119,12 +118,9 @@ module.exports = {
       root.dep.bus.expand( this)
       root.dep.request.expand( this)
 
-      console.log( root.board)
       _.forEach( root.board ,function( config, modelName){
         var boardName = modelName+"."+config.type
-        console.log( root.dep.model.models['board'].findOne)
         var result = root.dep.model.models['board'].findOne({name:boardName}).then(function(board){
-          console.log("creating board", board)
           return board || root.dep.model.models['board'].create({name:boardName,highest:0,lowest:0,list:[]})
         })
         createBoardResults.push(result)
