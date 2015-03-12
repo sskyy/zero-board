@@ -45,12 +45,13 @@ module.exports = {
           var bus = this
 
           return models['board'].findOne({name:boardName}).then(function(board){
-            var nodeIds = _.pluck(board.list.splice(config.skip, config.limit),'id'),
+            var nodeIds = _.compact(_.pluck(board.list.splice(config.skip, config.limit),'id')),
               findEvent = modelName+".find"
 
-            return bus.fire( findEvent,{id:nodeIds}).then(function(){
+
+            return bus.fire( findEvent,{id:nodeIds}).then(function(busResult){
               var reOrderedData = nodeIds.map( function( id){
-                return _.find(bus.data(findEvent),{id:id} )
+                return _.find(busResult["model.find."+modelName],{id:id} )
               })
               bus.data("respond.data",reOrderedData)
             })
@@ -86,7 +87,12 @@ module.exports = {
 
       var boardName = modelName+"."+config.type
 
-      listeners[modelName+".update.after"] = function updateScore( val ){
+      listeners[modelName+".update.after"] = function updateScore( vals ){
+        if( _.isArray(vals) && vals.length !== 1 ) return console.log("you are update multiple values")
+
+        var val = vals[0]
+
+        console.log(" updating", val)
         var score = root.strategy[config.type](val, config.key)
         var bus = this
         //TODO update board
@@ -104,7 +110,7 @@ module.exports = {
           }
           board.lowest = board.list[board.list.length-1].score
           board.highest = board.list[0].score
-
+          console.log("updating",{name:boardName},board)
           return bus.fire("board.update",{name:boardName},board)
         })
       }
